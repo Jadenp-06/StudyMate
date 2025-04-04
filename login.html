@@ -1,0 +1,127 @@
+<!-- login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StudyMate - Login</title>
+  <link rel="stylesheet" href="stylesStudyMate.css " />
+  <style>
+    .auth-container {
+        max-width: 400px;
+        margin: 80px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .auth-container h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 16px;
+    }
+
+    .toggle-password {
+        display: block;
+        text-align: right;
+        margin-top: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #4c51bf;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 12px;
+        background-color: #4c51bf;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .btn:hover {
+        background-color: #6b5de4;
+    }
+
+    .error {
+        color: red;
+        font-size: 14px;
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .link {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <h2>Login to StudyMate</h2>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="loginEmail">Email</label>
+        <input type="text" id="loginEmail" name="loginEmail" required />
+      </div>
+      <div class="form-group">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" name="loginPassword" required />
+        <span class="toggle-password" onclick="togglePassword('loginPassword')">Show Password</span>
+      </div>
+      <button type="submit" class="btn">Login</button>
+      <div class="error" id="loginError"></div>
+    </form>
+    <div class="link">Don't have an account? <a href="signup.html">Sign up</a></div>
+  </div>
+
+  <script>
+    function togglePassword(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(email)) {
+        document.getElementById("loginError").textContent = "Please enter a valid email address.";
+        return;
+      }
+
+      if (!storedUser || storedUser.email !== email || storedUser.password !== password) {
+        document.getElementById("loginError").textContent = "Invalid email or password.";
+        return;
+      }
+      localStorage.setItem("isLoggedIn", "true");
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>

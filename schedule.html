@@ -1,14 +1,16 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyMate - Schedule Builder</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyMate - Schedule Builder</title>
+  <link rel="stylesheet" href="stylesStudyMate.css" />
+  
 </head>
 <body>
     <header>
         <h1>StudyMate</h1>
-        <p>Your ultimate study companion</p>
+        <p>Your study companion</p>
     </header>
     <nav>
         <a href="index.html">Home</a>
@@ -18,19 +20,80 @@
         <a href="progress.html">Progress Tracker</a>
         <a href="resources.html">Resource Hub</a>
     </nav>
-    <div class="content">
-        <h2>Schedule Builder</h2>
-        <p>Create, customize, and manage your daily or weekly study schedule with ease.</p>
-        <form>
-            <label for="task">Task:</label>
-            <input type="text" id="task" name="task"><br><br>
-            <label for="time">Time:</label>
-            <input type="time" id="time" name="time"><br><br>
-            <input type="submit" value="Add Task">
-        </form>
-    </div>
-    <footer>
-        <p>&copy; 2025 StudyMate. Mojo, Jaden, Solomon.</p>
-    </footer>
+  <div class="schedule-container">
+    <h2>Schedule Builder</h2>
+    <form id="scheduleForm">
+      <div class="form-group">
+        <label for="task">Task</label>
+        <input type="text" id="task" required />
+      </div>
+      <div class="form-group">
+        <label for="time">Time</label>
+        <input type="time" id="time" required />
+      </div>
+      <button type="submit" class="btn">Add Task</button>
+    </form>
+
+    <div class="task-list" id="taskList"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const scheduleForm = document.getElementById("scheduleForm");
+      const taskInput = document.getElementById("task");
+      const timeInput = document.getElementById("time");
+      const taskList = document.getElementById("taskList");
+
+      const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+      const taskKey = `scheduleTasks_${currentUser?.email}`;
+      const tasks = JSON.parse(localStorage.getItem(taskKey)) || [];
+
+      // Helper function to convert military time (HH:MM) to 12-hour format with AM/PM
+      function formatTime(timeString) {
+        const [hourStr, minute] = timeString.split(":");
+        let hour = parseInt(hourStr);
+        const ampm = hour >= 12 ? "PM" : "AM";
+        hour = hour % 12;
+        if (hour === 0) {
+          hour = 12;
+        }
+        return hour + ":" + minute + " " + ampm;
+      }
+
+      function renderTasks() {
+        taskList.innerHTML = "";
+        tasks.forEach((t, index) => {
+          const div = document.createElement("div");
+          div.className = "task-item";
+          div.innerHTML = `
+            <span>${formatTime(t.time)} - ${t.task}</span>
+            <button class="remove-btn" onclick="removeTask(${index})">✖</button>
+          `;
+          taskList.appendChild(div);
+        });
+      }
+
+      scheduleForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const newTask = {
+          task: taskInput.value,
+          time: timeInput.value
+        };
+        tasks.push(newTask);
+        localStorage.setItem(taskKey, JSON.stringify(tasks));
+        taskInput.value = "";
+        timeInput.value = "";
+        renderTasks();
+      });
+
+      window.removeTask = function (index) {
+        tasks.splice(index, 1);
+        localStorage.setItem(taskKey, JSON.stringify(tasks));
+        renderTasks();
+      };
+
+      renderTasks();
+    });
+  </script>
 </body>
 </html>

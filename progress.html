@@ -1,30 +1,206 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyMate - Progress Tracker</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyMate - Progress Tracker</title>
+  <link rel="stylesheet" href="stylesStudyMate.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
 </head>
 <body>
-    <header>
-        <h1>StudyMate</h1>
-        <p>Your ultimate study companion</p>
-    </header>
-    <nav>
-        <a href="index.html">Home</a>
-        <a href="schedule.html">Schedule Builder</a>
-        <a href="group-study.html">Group Study</a>
-        <a href="motivation.html">Motivation Corner</a>
-        <a href="progress.html">Progress Tracker</a>
-        <a href="resources.html">Resource Hub</a>
-    </nav>
-    <div class="content">
-        <h2>Progress Tracker</h2>
-        <p>Track your academic progress with visual analytics and stay on top of your goals.</p>
-        <p>Progress Chart Placeholder</p>
+  <header>
+      <h1>StudyMate</h1>
+      <p>Your study companion</p>
+  </header>
+  <nav>
+      <a href="index.html">Home</a>
+      <a href="schedule.html">Schedule Builder</a>
+      <a href="group-study.html">Group Study</a>
+      <a href="motivation.html">Motivation Corner</a>
+      <a href="progress.html">Progress Tracker</a>
+      <a href="resources.html">Resource Hub</a>
+  </nav>
+  <div class="progress-container">
+    <h2>Your Study Progress</h2>
+    <canvas id="progressChart" width="400" height="300"></canvas>
+
+    <div class="goal-section">
+      <h3>Set Your Goals</h3>
+      <input type="text" id="newSubject" placeholder="Add new subject">
+      <button onclick="addSubject()">Add Subject</button><br>
+      <input type="text" id="goalText" placeholder="Enter your goal...">
+      <select id="subjectSelect"></select>
+      <button onclick="addGoal()">Add Goal</button>
+      <div class="goal-list" id="goalList"></div>
     </div>
-    <footer>
-        <p>&copy; 2023 StudyMate. All rights reserved.</p>
-    </footer>
+
+    <div class="subject-section">
+      <h3>Subjects</h3>
+      <div class="subject-list" id="subjectList"></div>
+    </div>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const progressKey = `studyProgress_${currentUser?.email}`;
+    const goalsKey = `studyGoals_${currentUser?.email}`;
+
+    
+    let progressData = JSON.parse(localStorage.getItem(progressKey)) || {
+      labels: [],
+      progress: []
+    };
+    let goals = JSON.parse(localStorage.getItem(goalsKey)) || [];
+
+    const ctx = document.getElementById("progressChart").getContext("2d");
+    const chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: progressData.labels,
+        datasets: [{
+          label: "% Completed",
+          data: progressData.progress,
+          backgroundColor: "#4c51bf"
+        }]
+      },
+      options: {
+        indexAxis: "y", 
+        responsive: true,
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: 100
+          }
+        }
+      }
+    });
+
+    const subjectSelect = document.getElementById("subjectSelect");
+    const subjectListContainer = document.getElementById("subjectList");
+
+    
+    function updateSubjectDropdown() {
+      subjectSelect.innerHTML = "";
+      progressData.labels.forEach(subject => {
+        const option = document.createElement("option");
+        option.value = subject;
+        option.textContent = subject;
+        subjectSelect.appendChild(option);
+      });
+    }
+
+    
+    function renderSubjects() {
+      subjectListContainer.innerHTML = "";
+      progressData.labels.forEach((subject, index) => {
+        const div = document.createElement("div");
+        div.className = "subject-item";
+        div.innerHTML = `
+          <span>${subject}</span>
+          <button onclick="removeSubject(${index})">Remove</button>
+        `;
+        subjectListContainer.appendChild(div);
+      });
+    }
+
+    
+    function addSubject() {
+      const newSubject = document.getElementById("newSubject").value.trim();
+      if (newSubject && !progressData.labels.includes(newSubject)) {
+        progressData.labels.push(newSubject);
+        progressData.progress.push(0);
+        localStorage.setItem(progressKey, JSON.stringify(progressData));
+        chart.data.labels = progressData.labels;
+        chart.data.datasets[0].data = progressData.progress;
+        chart.update();
+        updateSubjectDropdown();
+        renderSubjects();
+        document.getElementById("newSubject").value = "";
+      }
+    }
+
+    
+    function removeSubject(subjectIndex) {
+      const subjectToRemove = progressData.labels[subjectIndex];
+      
+      progressData.labels.splice(subjectIndex, 1);
+      progressData.progress.splice(subjectIndex, 1);
+      
+      goals = goals.filter(goal => goal.subject !== subjectToRemove);
+      localStorage.setItem(progressKey, JSON.stringify(progressData));
+      localStorage.setItem(goalsKey, JSON.stringify(goals));
+      chart.data.labels = progressData.labels;
+      chart.data.datasets[0].data = progressData.progress;
+      chart.update();
+      updateSubjectDropdown();
+      renderGoals();
+      renderSubjects();
+    }
+
+    
+    function recalcProgress() {
+      progressData.labels.forEach((subject, index) => {
+        const subjectGoals = goals.filter(goal => goal.subject === subject);
+        const total = subjectGoals.length;
+        const done = subjectGoals.filter(goal => goal.done).length;
+        progressData.progress[index] = total > 0 ? Math.round((done / total) * 100) : 0;
+      });
+      localStorage.setItem(progressKey, JSON.stringify(progressData));
+      chart.data.datasets[0].data = progressData.progress;
+      chart.update();
+    }
+
+    
+    function addGoal() {
+      const text = document.getElementById("goalText").value.trim();
+      const subject = subjectSelect.value;
+      if (text && subject) {
+        goals.push({ text, subject, done: false });
+        localStorage.setItem(goalsKey, JSON.stringify(goals));
+        document.getElementById("goalText").value = "";
+        renderGoals();
+        recalcProgress();
+      }
+    }
+
+    
+    function toggleGoal(index) {
+      goals[index].done = !goals[index].done;
+      localStorage.setItem(goalsKey, JSON.stringify(goals));
+      renderGoals();
+      recalcProgress();
+    }
+
+    
+    function removeGoal(index) {
+      goals.splice(index, 1);
+      localStorage.setItem(goalsKey, JSON.stringify(goals));
+      renderGoals();
+      recalcProgress();
+    }
+
+    
+    function renderGoals() {
+      const container = document.getElementById("goalList");
+      container.innerHTML = "";
+      goals.forEach((goal, index) => {
+        const div = document.createElement("div");
+        div.className = "goal-item";
+        div.innerHTML = `
+          <div>
+            <input type="checkbox" ${goal.done ? "checked" : ""} onchange="toggleGoal(${index})">
+            <label>${goal.text} <small>(${goal.subject})</small></label>
+          </div>
+          <button onclick="removeGoal(${index})">Remove</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    updateSubjectDropdown();
+    renderGoals();
+    renderSubjects();
+  </script>
 </body>
 </html>
